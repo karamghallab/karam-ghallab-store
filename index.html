@@ -594,7 +594,11 @@
     }
 
     function toggleManager(show) {
-      state.managing = Boolean(show);
+      // ⚠️ التحقق هنا: الشرط يتأكد أن المستخدم الحالي هو "كرم" (اسم المالك) قبل السماح بفتح الإدارة
+      const isOwner = (state.currentUser === "كرم"); 
+      
+      state.managing = Boolean(show) && isOwner;
+      
       document.getElementById("manager-panel").classList.toggle("hidden-panel", !state.managing);
       document.querySelectorAll(".owner-only").forEach(item => item.classList.toggle("hidden", !state.managing));
       if (state.managing) document.getElementById("app-name").focus();
@@ -706,6 +710,11 @@
       loginModal.classList.add("hidden");
       showStatus(text("loginSuccess"));
       loginForm.reset();
+
+      // لو الشخص المسجل هو المالك (كرم)، يمكنك تفعيل أو توجيهه للوحة التحكم مباشرة إذا أراد
+      if (user === "كرم" && window.location.hash === "#owner-storek") {
+        toggleManager(true);
+      }
     });
 
     function updateAuthUI() {
@@ -775,7 +784,8 @@
 
     document.getElementById("app-form").addEventListener("submit", async event => {
       event.preventDefault();
-      if (!state.managing) return;
+      // تأكيد إضافي أثناء الحفظ أن المستخدم الحالي هو المالك
+      if (!state.managing || state.currentUser !== "كرم") return;
 
       const form = event.currentTarget;
       if (!form.reportValidity()) return;
