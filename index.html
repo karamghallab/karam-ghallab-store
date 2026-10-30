@@ -623,6 +623,7 @@
         // Public browser configuration. Protect data with RLS; never place secret/service-role keys here.
         const SUPABASE_URL = 'https://gsqxgvuruwlyrwpuwbuw.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8gx-Jjv6AAj-DezqE0z8aA_rMP1nxnW';
+        const OWNER_EMAILS = new Set(['karamghallabjo@gmail.com']);
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
             auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
         });
@@ -655,10 +656,16 @@
         };
 
         window.onload = async function() {
+            const oauthCallback = new URLSearchParams(window.location.search).has('code') ||
+                new URLSearchParams(window.location.hash.slice(1)).has('access_token');
             initTheme();
             refreshAdhanToggleUI();
             initSiteVisits();
             await initUserData();
+            if (oauthCallback && currentUser) {
+                openAuthModal();
+                showToast(`تم تسجيل الدخول بنجاح، أهلاً ${currentUser.name}`);
+            }
             fetchSurahs();
             loadQuranPage(currentPage);
             initProphetReminderTimer();
@@ -978,9 +985,12 @@
                 document.getElementById('profile-page-count').innerText = `${currentUser.currentPage || 1} / 604`;
                 document.getElementById('profile-score-count').innerText = `${currentUser.score || 0} 🌟`;
                 const ownerContainer = document.getElementById('owner-panel-btn-container');
-                if (ownerContainer) ownerContainer.classList.add('hidden');
+                const isConfiguredOwner = OWNER_EMAILS.has(String(currentUser.email || '').trim().toLowerCase());
+                if (ownerContainer) ownerContainer.classList.toggle('hidden', !isConfiguredOwner);
             } else {
                 loginView.classList.remove('hidden'); registerView.classList.add('hidden'); profileView.classList.add('hidden');
+                const ownerContainer = document.getElementById('owner-panel-btn-container');
+                if (ownerContainer) ownerContainer.classList.add('hidden');
             }
             modal.classList.remove('hidden');
         };
@@ -1157,7 +1167,11 @@
         };
 
         window.openOwnerPanel = function() {
-            showToast('لوحة المالك تحتاج صلاحية إدارية آمنة من الخادم، ولم يتم تفعيلها بعد.');
+            if (!currentUser || !OWNER_EMAILS.has(String(currentUser.email || '').trim().toLowerCase())) {
+                showToast('هذه الخاصية متاحة لحساب الأونر المحدد فقط.');
+                return;
+            }
+            showToast('تم التعرف على حساب الأونر. لوحة الإدارة تحتاج إعداد صلاحيات آمنة على خادم Supabase قبل عرض بيانات الحسابات.');
         };
 
         window.ownerSwitchAccount = function() {
